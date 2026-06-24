@@ -3,7 +3,8 @@ import { getSessionUser } from '@/lib/auth';
 import { dbQuery } from '@/lib/db';
 import crypto from 'crypto';
 import { getUserActivePlan, checkFeatureAccess } from '@/lib/accessControl';
-import { uploadToSupabase, generateEdgeTTSBuffer } from '@/lib/supabaseAdmin';
+import { uploadToSupabase } from '@/lib/supabaseAdmin';
+import { generateEdgeTTSBuffer } from '@/lib/tts';
 
 // GET /api/voice/session - Ambil semua sesi curhat milik user
 export async function GET() {

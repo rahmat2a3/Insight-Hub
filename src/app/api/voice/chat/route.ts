@@ -3,7 +3,8 @@ import { getSessionUser } from '@/lib/auth';
 import { dbQuery } from '@/lib/db';
 import crypto from 'crypto';
 import { getUserActivePlan, checkFeatureAccess } from '@/lib/accessControl';
-import { uploadToSupabase, fetchBufferFromUrl, generateEdgeTTSBuffer } from '@/lib/supabaseAdmin';
+import { uploadToSupabase, fetchBufferFromUrl } from '@/lib/supabaseAdmin';
+import { generateEdgeTTSBuffer } from '@/lib/tts';
 
 const XAI_BASE_URL = 'https://api.x.ai/v1';
 

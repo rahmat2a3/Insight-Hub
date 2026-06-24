@@ -2,14 +2,21 @@ import { Pool } from 'pg';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-// Inisialisasi pool koneksi ke database Supabase PostgreSQL
-const pool = new Pool({
-  connectionString: process.env.SUPABASE_DB_URL,
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-  ssl: { rejectUnauthorized: false }
-});
+// Inisialisasi pool koneksi ke database Supabase PostgreSQL secara lazy
+let pool: Pool | null = null;
+
+export function getPool(): Pool {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.SUPABASE_DB_URL,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+      ssl: { rejectUnauthorized: false }
+    });
+  }
+  return pool;
+}
 
 // Helper untuk mentranslasikan kueri MySQL ke PostgreSQL
 export function convertQuery(sql: string): string {
@@ -99,9 +106,10 @@ export function normalizeKeys(row: any) {
 
 export async function dbQuery<T = any>(sql: string, params: any[] = []): Promise<T[]> {
   const convertedSql = convertQuery(sql);
+  const currentPool = getPool();
   
   try {
-    const result = await pool.query(convertedSql, params);
+    const result = await currentPool.query(convertedSql, params);
     return result.rows.map(normalizeKeys) as T[];
   } catch (error) {
     console.error('Database Query Error (PostgreSQL):', error);
@@ -111,7 +119,7 @@ export async function dbQuery<T = any>(sql: string, params: any[] = []): Promise
 
     // Catat log error ke table error_logs secara asynchronous
     const logSql = convertQuery('INSERT INTO error_logs (error_message, stack_trace, path) VALUES (?, ?, ?)');
-    pool.query(logSql, [
+    currentPool.query(logSql, [
       error instanceof Error ? error.message : String(error),
       error instanceof Error ? (error.stack || null) : null,
       sql.substring(0, 255)
@@ -121,4 +129,4 @@ export async function dbQuery<T = any>(sql: string, params: any[] = []): Promise
   }
 }
 
-export default pool;
+export default getPool;
