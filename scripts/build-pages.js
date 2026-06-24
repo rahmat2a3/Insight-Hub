@@ -19,17 +19,22 @@ try {
   }
   fs.mkdirSync(distDir);
 
-  // Helper function to copy recursive
+  // Helper function to copy recursive (resolves symlinks using statSync)
   function copyDirSync(src, dest) {
     fs.mkdirSync(dest, { recursive: true });
-    const entries = fs.readdirSync(src, { withFileTypes: true });
-    for (const entry of entries) {
-      const srcPath = path.join(src, entry.name);
-      const destPath = path.join(dest, entry.name);
-      if (entry.isDirectory()) {
-        copyDirSync(srcPath, destPath);
-      } else {
-        fs.copyFileSync(srcPath, destPath);
+    const entries = fs.readdirSync(src);
+    for (const name of entries) {
+      const srcPath = path.join(src, name);
+      const destPath = path.join(dest, name);
+      try {
+        const stat = fs.statSync(srcPath);
+        if (stat.isDirectory()) {
+          copyDirSync(srcPath, destPath);
+        } else {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      } catch (err) {
+        console.warn(`[Warning] Skip copying symlink/file: ${srcPath} (${err.message})`);
       }
     }
   }
