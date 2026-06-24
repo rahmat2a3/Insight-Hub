@@ -1,4 +1,5 @@
 import { Client } from 'pg';
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -155,7 +156,6 @@ export async function dbQuery<T = any>(sql: string, params: any[] = []): Promise
   let isHyperdrive = false;
   
   try {
-    const { getCloudflareContext } = require("@opennextjs/cloudflare");
     const ctx = getCloudflareContext();
     if (ctx && ctx.env && ctx.env.HYPERDRIVE && ctx.env.HYPERDRIVE.connectionString) {
       dbUrl = ctx.env.HYPERDRIVE.connectionString;
