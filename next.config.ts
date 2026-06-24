@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config) => {
+    return config;
+  },
 };
 
 export default nextConfig;
