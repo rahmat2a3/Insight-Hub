@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 console.log('Starting build-pages script...');
+process.env.OPEN_NEXT_DEBUG = '1';
 
 try {
   // 1. Run opennextjs-cloudflare build
