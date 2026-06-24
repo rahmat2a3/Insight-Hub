@@ -36,7 +36,7 @@ function RegisterContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       });
-      const data = await res.json();
+      const data = (await res.json()) as any;
       setLoading(false);
       if (res.ok && data.success) {
         // Redirect ke halaman OTP verifikasi
