@@ -18,10 +18,64 @@ export function getPool(): Pool {
   return pool;
 }
 
+function translateDateFormatString(mysqlFormat: string): string {
+  let pgFormat = mysqlFormat;
+  const mappings: Record<string, string> = {
+    '%Y': 'YYYY',
+    '%y': 'YY',
+    '%m': 'MM',
+    '%d': 'DD',
+    '%H': 'HH24',
+    '%h': 'HH12',
+    '%i': 'MI',
+    '%s': 'SS',
+    '%b': 'Mon',
+    '%M': 'Month',
+    '%a': 'Dy',
+    '%W': 'Day',
+    '%c': 'FMMM',
+    '%e': 'FMDD',
+  };
+
+  for (const [mysql, pg] of Object.entries(mappings)) {
+    pgFormat = pgFormat.replace(new RegExp(mysql, 'g'), pg);
+  }
+  return pgFormat;
+}
+
 // Helper untuk mentranslasikan kueri MySQL ke PostgreSQL
 export function convertQuery(sql: string): string {
+  // Pre-process MySQL functions to PostgreSQL equivalents
+  let processedSql = sql;
+
+  // 1. DATE_FORMAT(expr, format) -> TO_CHAR(expr, format)
+  processedSql = processedSql.replace(
+    /DATE_FORMAT\(([^,]+?),\s*['"](.+?)['"]\)/gi,
+    (match, expr, format) => {
+      return `TO_CHAR(${expr}, '${translateDateFormatString(format)}')`;
+    }
+  );
+
+  // 2. DATE_SUB(expr, INTERVAL interval_expr) -> (expr - INTERVAL interval_expr)
+  processedSql = processedSql.replace(
+    /DATE_SUB\((.+?),\s*(INTERVAL\s+.+?)\)/gi,
+    '($1 - $2)'
+  );
+
+  // 3. DATE_ADD(expr, INTERVAL interval_expr) -> (expr + INTERVAL interval_expr)
+  processedSql = processedSql.replace(
+    /DATE_ADD\((.+?),\s*(INTERVAL\s+.+?)\)/gi,
+    '($1 + $2)'
+  );
+
+  // 4. DATE(expr) -> CAST(expr AS date)
+  processedSql = processedSql.replace(/DATE\(([^)]+?)\)/gi, 'CAST($1 AS date)');
+
+  // 5. CURDATE() -> CURRENT_DATE
+  processedSql = processedSql.replace(/CURDATE\(\)/gi, 'CURRENT_DATE');
+
   // Translate MySQL unquoted INTERVAL syntax: INTERVAL 30 DAY -> INTERVAL '30 DAY'
-  const translatedSql = sql.replace(
+  const translatedSql = processedSql.replace(
     /INTERVAL\s+(\d+)\s+(DAY|WEEK|MONTH|YEAR|HOUR|MINUTE|SECOND|days|weeks|months|years|hours|minutes|seconds)/gi,
     "INTERVAL '$1 $2'"
   );
